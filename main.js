@@ -4642,38 +4642,20 @@ function createLogger(UserClass) {
         return format;
       }
       async showmsg(endTime = Date.now()) {
-        let notifyBody = "";
-        // 遍历所有用户，聚合他们的通知日志
-        for (const user of this.userList) {
-          if (user.notifyLogs.length > 0) {
-            const userHeader = `------------------ 账号[${user.index}][${maskStr(user.name)}] ------------------`;
-            // 移除每条日志中的手机号前缀，因为标题中已经包含了
-            const userLogs = user.notifyLogs.map(log => log.replace(`[${user.name}]`, '')).join("\n");
-            notifyBody += `${userHeader}\n${userLogs}\n`;
-          }
-        }
-
-        // 将全局通知日志追加到推送体
-        if (this.notifyStr.length) {
-          notifyBody += "============== 执行日志 ==============\n" + this.notifyStr.join("\n") + "\n";
-        }
-
-        // 追加运行时控制台输出
-        if (this.consoleLogs.length) {
-          notifyBody += "============== 控制台输出 ==============\n" + this.consoleLogs.join("\n") + "\n";
-        }
-
-        // 追加运行时间信息
         const durationSeconds = ((endTime - this.startTime) / 1000).toFixed(2);
         const startTimeStr = this.time("yyyy-MM-dd hh:mm:ss", this.startTime);
         const endTimeStr = this.time("yyyy-MM-dd hh:mm:ss", endTime);
-        notifyBody += "============== 运行信息 ==============\n";
-        notifyBody += `开始: ${startTimeStr}\n`;
-        notifyBody += `结束: ${endTimeStr}\n`;
-        notifyBody += `用时: ${durationSeconds}秒`;
 
-        if (this.notifyFlag && notifyBody) {
-          // 优先使用本地 push.js (钉钉)，若不存在再尝试 sendNotify 兼容旧逻辑
+        const globalLogs = this.notifyStr.length ? ["============== 执行日志 ==============", ...this.notifyStr] : [];
+        const consoleLogs = this.consoleLogs.length ? ["============== 控制台输出 ==============", ...this.consoleLogs] : [];
+        const runtimeInfo = [
+          "============== 运行信息 ==============" ,
+          `开始: ${startTimeStr}`,
+          `结束: ${endTimeStr}`,
+          `用时: ${durationSeconds}秒`
+        ];
+
+        if (this.notifyFlag) {
           const notifier = (() => {
             try {
               return require("./push");
@@ -4681,8 +4663,24 @@ function createLogger(UserClass) {
               return require("./sendNotify");
             }
           })();
-          this.log("\n============== 推送 ==============");
-          await notifier.sendNotify(this.name, notifyBody);
+
+          for (const user of this.userList) {
+            const chunks = [];
+            const userHeader = `------------------ 账号[${user.index}][${maskStr(user.name)}] ------------------`;
+            const userLogs = Array.isArray(user.notifyLogs) ? user.notifyLogs : [];
+            if (userLogs.length) {
+              const cleanedLogs = userLogs.map(log => log.replace(`[${user.name}]`, ""));
+              chunks.push(userHeader, ...cleanedLogs);
+            } else {
+              chunks.push(userHeader, "无账号日志");
+            }
+
+            chunks.push(...globalLogs, ...consoleLogs, ...runtimeInfo);
+
+            const body = chunks.join("\n");
+            this.log(`\n============== 推送账号 ${user.index} ==============`);
+            await notifier.sendNotify(`${this.name} - 账号${user.index}`, body);
+          }
         }
       }
       padStr(value, length, options = {}) {
