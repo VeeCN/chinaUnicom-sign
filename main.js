@@ -50,7 +50,7 @@ const appName = createLogger("中国联通"),
   } = require("tough-cookie"),
   chinaUnicom = "chinaUnicom",
   delimiters = ["\n", "&", "@"],
-  cookieVars = [chinaUnicom + "Cookie"],
+  cookieVars = [chinaUnicom + "Cookie", "CHINAUNICOMCOOKIE"],
   signDisabled = process.env[chinaUnicom + "Sign"] === "false",
   ltzfDisabled = process.env[chinaUnicom + "Ltzf"] === "false",
   requestTimeout = 50000,
@@ -4577,13 +4577,15 @@ function createLogger(UserClass) {
         return { ...source };
       }
       read_env(UserClass) {
-        const envValues = cookieVars.map(varName => process.env[varName]);
-        for (const envValue of envValues.filter(value => !!value)) {
-          const delimitersFound = delimiters.filter(delimiter => envValue.includes(delimiter));
-          const delimiter = delimitersFound.length > 0 ? delimitersFound[0] : delimiters[0];
-          for (const userInfo of envValue.split(delimiter).filter(value => !!value)) {
-            this.userList.push(new UserClass(userInfo));
-          }
+        const envValue = cookieVars.map(varName => process.env[varName]).find(value => !!value);
+        if (!envValue) {
+          this.log("未找到变量，请检查变量" + cookieVars.map(varName => "[" + varName + "]").join("或"), { notify: true });
+          return false;
+        }
+        const delimitersFound = delimiters.filter(delimiter => envValue.includes(delimiter));
+        const delimiter = delimitersFound.length > 0 ? delimitersFound[0] : delimiters[0];
+        for (const userInfo of envValue.split(delimiter).filter(value => !!value)) {
+          this.userList.push(new UserClass(userInfo));
         }
         this.userCount = this.userList.length;
         if (!this.userCount) {
