@@ -1,0 +1,15 @@
+{
+  "name": "china-unicom-automation",
+  "version": "1.10.0",
+  "description": "Automation script for China Unicom daily tasks.",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "got": "^11.8.6",
+    "tough-cookie": "^4.1.4"
+  },
+  "license": "MIT"
+}
