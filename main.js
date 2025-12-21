@@ -4547,6 +4547,16 @@ function createLogger(UserClass) {
         this.default_wait_interval = 1000;
         this.default_wait_limit = 3600000;
         this.default_wait_ahead = 0;
+        // Capture console output for later push
+        this.consoleLogs = [];
+        this.originalConsoleLog = console.log;
+        console.log = (...args) => {
+          try {
+            const msg = args.map(a => typeof a === "string" ? a : JSON.stringify(a)).join(" ");
+            this.consoleLogs.push(msg);
+          } catch (_) {}
+          this.originalConsoleLog.apply(console, args);
+        };
       }
       log(message, options = {}) {
         const defaultOptions = { console: true, ...options };
@@ -4631,7 +4641,7 @@ function createLogger(UserClass) {
         }
         return format;
       }
-      async showmsg() {
+      async showmsg(endTime = Date.now()) {
         let notifyBody = "";
         // 遍历所有用户，聚合他们的通知日志
         for (const user of this.userList) {
@@ -4643,10 +4653,36 @@ function createLogger(UserClass) {
           }
         }
 
+        // 将全局通知日志追加到推送体
+        if (this.notifyStr.length) {
+          notifyBody += "============== 执行日志 ==============\n" + this.notifyStr.join("\n") + "\n";
+        }
+
+        // 追加运行时控制台输出
+        if (this.consoleLogs.length) {
+          notifyBody += "============== 控制台输出 ==============\n" + this.consoleLogs.join("\n") + "\n";
+        }
+
+        // 追加运行时间信息
+        const durationSeconds = ((endTime - this.startTime) / 1000).toFixed(2);
+        const startTimeStr = this.time("yyyy-MM-dd hh:mm:ss", this.startTime);
+        const endTimeStr = this.time("yyyy-MM-dd hh:mm:ss", endTime);
+        notifyBody += "============== 运行信息 ==============\n";
+        notifyBody += `开始: ${startTimeStr}\n`;
+        notifyBody += `结束: ${endTimeStr}\n`;
+        notifyBody += `用时: ${durationSeconds}秒`;
+
         if (this.notifyFlag && notifyBody) {
-          const notify = require("./sendNotify");
+          // 优先使用本地 push.js (钉钉)，若不存在再尝试 sendNotify 兼容旧逻辑
+          const notifier = (() => {
+            try {
+              return require("./push");
+            } catch (_) {
+              return require("./sendNotify");
+            }
+          })();
           this.log("\n============== 推送 ==============");
-          await notify.sendNotify(this.name, notifyBody);
+          await notifier.sendNotify(this.name, notifyBody);
         }
       }
       padStr(value, length, options = {}) {
@@ -4699,8 +4735,8 @@ function createLogger(UserClass) {
         return new Promise(resolve => setTimeout(resolve, ms));
       }
       async exitNow() {
-        await this.showmsg();
         const endTime = Date.now();
+        await this.showmsg(endTime);
         const duration = (endTime - this.startTime) / 1000;
         this.log("");
         this.log("[" + this.name + "]运行结束，共运行了" + duration + "秒", { time: true });
