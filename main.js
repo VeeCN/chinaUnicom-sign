@@ -664,7 +664,6 @@ class CustomUserService extends UserServiceClass {
       let response = await this.request(requestOptions);
       let { result: responseData, statusCode: responseStatus } = response;
       let responseCode = appName.get(responseData, "code", responseStatus);
-      console.log(response);
   
       if (responseCode == 0) {
         loginSuccess = true;
