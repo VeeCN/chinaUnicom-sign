@@ -11,10 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Shanghai
-      CHINAUNICOMCOOKIE: ${{ secrets.CHINAUNICOMCOOKIE }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
+    - name: 注入私有Secrets到环境
+      uses: zhlhlf/Secrets_To_Env@master
+      with:
+        secrets_json: ${{ toJSON(secrets) }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -25,4 +29,9 @@ jobs:
       run: npm install
 
     - name: Run script
-      run: npm start
+      shell: bash
+      run: |
+        set -a
+        [ -f .env ] && source .env
+        set +a
+        npm start

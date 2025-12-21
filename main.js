@@ -35,6 +35,7 @@ cron: 0 0,7,20 * * *
 const $ = new Env("中国联通");
 From：yaohuo28507 (Integration by AI, Woread Refactored)
 */
+require('dotenv').config(); // 新增：加载 .env 文件中的环境变量
 const fs = require('fs');
 const crypto = require("crypto"); // 新增：用于账号密码登录的RSA加密
 const appName = createLogger("中国联通"),
@@ -663,6 +664,7 @@ class CustomUserService extends UserServiceClass {
       let response = await this.request(requestOptions);
       let { result: responseData, statusCode: responseStatus } = response;
       let responseCode = appName.get(responseData, "code", responseStatus);
+      console.log(response);
   
       if (responseCode == 0) {
         loginSuccess = true;

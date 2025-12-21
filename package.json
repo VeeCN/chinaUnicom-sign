@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.5",
     "got": "^11.8.6",
     "tough-cookie": "^4.1.4"
   },
