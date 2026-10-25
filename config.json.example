@@ -1,0 +1,6 @@
+{
+  "_说明": "复制本文件为 config.json 并填入自己的信息；环境变量 chinaUnicomCookie 优先于本文件",
+  "token_online": "在这里填 token_online",
+  "appid": "在这里填 appId（可留空）",
+  "phone": "在这里填手机号"
+}
