@@ -1,9 +1,12 @@
 name: China Unicom Scheduled Run
 
+
 on:
   schedule:
-  - cron: "0 2 * * *" # 10:00 China Standard Time (UTC+8)
+  - cron: "0 2 * * *"→ Runs at 02:00 # 10:00 China Standard Time (UTC+8)
   workflow_dispatch:
+
+
 
 
 jobs:
@@ -11,22 +14,31 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Shanghai
+      chinaUnicomCookie: ${{ secrets.CHINAUNICOMCOOKIE }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: 注入私有Secrets到环境
-      uses: zhlhlf/Secrets_To_Env@master
-      with:
-        secrets_json: ${{ toJSON(secrets) }}
+
+
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 18
 
+
     - name: Install dependencies
       run: npm install
+
+
+    - name: Check account configuration
+      shell: bash
+      run: |
+        if [ -z "$chinaUnicomCookie" ]; then
+          echo "::error::Please configure the CHINAUNICOMCOOKIE repository secret."
+          exit 1
+        fi
 
     - name: Run script
       shell: bash
@@ -35,3 +47,4 @@ jobs:
         [ -f .env ] && source .env
         set +a
         npm start
+
