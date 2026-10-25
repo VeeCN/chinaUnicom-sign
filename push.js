@@ -30,6 +30,18 @@ function resolveWebhook() {
 }
 
 async function sendNotify(title, message) {
+  const sendKey = (process.env.SERVERCHAN_SENDKEY || "").trim();
+  if (sendKey) {
+    const result = await got.post(`https://sctapi.ftqq.com/${encodeURIComponent(sendKey)}.send`, {
+      form: { title: title || "联通签到通知", desp: message || "任务执行完成" },
+      responseType: "json",
+      timeout: { request: 15000 },
+      retry: { limit: 0 }
+    });
+    if (result.body.code !== 0) throw new Error(`ServerChan rejected notification (code ${result.body.code})`);
+    console.log("ServerChan push accepted");
+    return;
+  }
   const webhook = resolveWebhook();
   const content = title ? `${title}\n${message || ""}` : (message || "");
   const payload = {
@@ -54,9 +66,9 @@ if (require.main === module) {
   const [,, cliTitle, ...rest] = process.argv;
   const body = rest.join(" ");
   sendNotify(cliTitle || "test push", body || "Hello from push.js").then(() => {
-    console.log("DingTalk push sent");
+    console.log("Push sent");
   }).catch(err => {
-    console.error("DingTalk push failed", err.message || err);
+    console.error("Push failed");
     process.exit(1);
   });
 }
