@@ -1,7 +1,7 @@
 name: China Unicom Scheduled Run
 on:
   schedule:
-    - cron: '0 2 * * *'→ Runs at 02:00
+    - cron: '0 2 * * *'
 
 
   workflow_dispatch:
