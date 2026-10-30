@@ -6339,8 +6339,13 @@ class UserService:
         try:
             self.aiting_query_integral()
         except: pass
-        task_list = self.jf_get_task_detail(self.aiting_biz_ticket)
-        done_list = [t for t in task_list if t.get('finish') == 1]
+            try:
+				    task_list = self.jf_get_task_detail(self.aiting_biz_ticket)
+		except Exception as e:
+			        self.log(f"爱听任务: 获取任务列表失败, 跳过: {e}")
+			        return
+				
+    done_list = [t for t in task_list if t.get('finish') == 1]
         printed_names = set()
         for t in done_list:
              name = t.get('taskName')
